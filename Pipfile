@@ -8,9 +8,12 @@ opencv-python = "*"
 numpy = "*"
 matplotlib = "*"
 ipykernel = "*"
-tensorflow = "*"
+tf-models-official = "*"
+imageio = "*"
+pillow = "*"
 
 [dev-packages]
+black = "*"
 
 [requires]
 python_version = "3.8"
