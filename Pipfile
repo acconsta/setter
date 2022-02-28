@@ -7,7 +7,7 @@ name = "pypi"
 opencv-python = "*"
 numpy = "*"
 matplotlib = "*"
-ipykernel = "*"
+notebook = "*"
 pillow = "*"
 
 [dev-packages]
