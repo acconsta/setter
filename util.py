@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from object_detection.utils import visualization_utils as viz_utils
 
-LABEL_FILE = "data/labels_setter_2022-02-23-01-41-47.json"
+LABEL_FILE = "data/labels_setter_2022-03-01-05-53-13.json"
 SUBLABEL_FILE = "data/labels_setter_2022-02-24-12-00-24.csv"
-TRAIN_IMAGE_DIR = "data/train"
+IMAGE_DIR = "data/"
 
 LABELS = dict(
     color=["red", "green", "purple"],
@@ -127,7 +127,7 @@ def load_data_dataframe():
         box_df[label_type] = box_df.annotation.apply(
             lambda s: parse_label_list(s, label_type)
         ).astype("category")
-    box_df = box_df.drop("annotation", 1).set_index("annotation_id")
+    box_df = box_df.drop("annotation", axis=1).set_index("annotation_id")
 
     # Add numerical labels
     def get_factor(col):
@@ -140,12 +140,16 @@ def load_data_dataframe():
     df = df.join(box_df, on="annotation_id")
     return df
 
+
 def get_numpy_training_data(df):
     train_images_np = []
     gt_boxes = []
     gt_labels = []
     for _, rows in df.groupby(df.index):
-        image_path = os.path.join(TRAIN_IMAGE_DIR, rows.file_name.iloc[0])
+        if rows.file_name == "PXL_20220223_015905189.MP.jpg":
+            # TODO remove hard docded training example
+            continue
+        image_path = os.path.join(IMAGE_DIR, rows.file_name.iloc[0])
         try:
             train_images_np.append(load_image_into_numpy_array(image_path))
             gt_boxes.append(np.stack(rows.bbox.to_numpy()))
@@ -154,7 +158,3 @@ def get_numpy_training_data(df):
             pass
     assert len(train_images_np) == len(gt_boxes) == len(gt_labels)
     return train_images_np, gt_boxes, gt_labels
-
-
-get_numpy_training_data(load_data_dataframe())
-

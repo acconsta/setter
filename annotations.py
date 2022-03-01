@@ -4,15 +4,15 @@ from functools import lru_cache
 import json
 import cv2
 import numpy as np
+from util import LABEL_FILE
 
-LABEL_FILE = "data/labels_setter_2022-02-23-01-41-47.json"
 IMAGE_DIR = "data/"
 OUT_DIR = "data/"
 
 
 @lru_cache(100)
-def read_image(type, file_name):
-    return cv2.imread(os.path.join(IMAGE_DIR, type, file_name))
+def read_image(file_name):
+    return cv2.imread(os.path.join(IMAGE_DIR, file_name))
 
 
 with open(LABEL_FILE) as f:
@@ -40,28 +40,24 @@ def extract_card(image, c):
     return extract
 
 
-for type in ["train", "test"]:
-    image_id_file_map = {i["id"]: i["file_name"] for i in labels["images"]}
-    for annotation in ["boxes", "polygons"]:
-        os.makedirs(os.path.join(OUT_DIR, type, annotation), exist_ok=True)
-    for label in labels["annotations"]:
-        print(label)
-        image = read_image(type, image_id_file_map[label["image_id"]])
-        if image is None:
-            continue
+image_id_file_map = {i["id"]: i["file_name"] for i in labels["images"]}
+for label in labels["annotations"]:
+    print(label)
+    image = read_image(image_id_file_map[label["image_id"]])
+    assert image is not None
 
-        id = label["id"]
-        box = label["bbox"]
-        box = [int(i) for i in box]
-        x, y, w, h = box
-        crop = image[y : y + h, x : x + w]
-        out_name = os.path.join(OUT_DIR, type, "boxes", f"box_{id}.png")
-        cv2.imwrite(out_name, crop)
+    id = label["id"]
+    box = label["bbox"]
+    box = [int(i) for i in box]
+    x, y, w, h = box
+    crop = image[y : y + h, x : x + w]
+    out_name = os.path.join(OUT_DIR, "boxes", f"box_{id}.png")
+    cv2.imwrite(out_name, crop)
 
-        polgyon = label["segmentation"][0]
-        polygon = np.array([int(i) for i in polgyon]).reshape(-1, 2)
-        assert polygon.shape[0] == 4
+    polgyon = label["segmentation"][0]
+    polygon = np.array([int(i) for i in polgyon]).reshape(-1, 2)
+    assert polygon.shape[0] == 4
 
-        out_name = os.path.join(OUT_DIR, type, "polygons", f"polygon_{id}.png")
-        extract = extract_card(image, polygon)
-        cv2.imwrite(out_name, extract)
+    out_name = os.path.join(OUT_DIR, "polygons", f"polygon_{id}.png")
+    extract = extract_card(image, polygon)
+    cv2.imwrite(out_name, extract)
