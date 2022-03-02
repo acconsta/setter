@@ -4,10 +4,7 @@ from functools import lru_cache
 import json
 import cv2
 import numpy as np
-from util import LABEL_FILE
-
-IMAGE_DIR = "data/"
-OUT_DIR = "data/"
+from util import LABEL_FILE, IMAGE_DIR
 
 
 @lru_cache(100)
@@ -41,9 +38,12 @@ def extract_card(image, c):
 
 
 image_id_file_map = {i["id"]: i["file_name"] for i in labels["images"]}
+for type in ["boxes", "polygons"]:
+    os.makedirs(os.path.join(IMAGE_DIR, type), exist_ok=True)
 for label in labels["annotations"]:
     print(label)
-    image = read_image(image_id_file_map[label["image_id"]])
+    file_name = image_id_file_map[label["image_id"]]
+    image = read_image(file_name)
     assert image is not None
 
     id = label["id"]
@@ -51,13 +51,13 @@ for label in labels["annotations"]:
     box = [int(i) for i in box]
     x, y, w, h = box
     crop = image[y : y + h, x : x + w]
-    out_name = os.path.join(OUT_DIR, "boxes", f"box_{id}.png")
+    out_name = os.path.join(IMAGE_DIR, "boxes", f"{file_name}_{id}.png")
     cv2.imwrite(out_name, crop)
 
     polgyon = label["segmentation"][0]
     polygon = np.array([int(i) for i in polgyon]).reshape(-1, 2)
     assert polygon.shape[0] == 4
 
-    out_name = os.path.join(OUT_DIR, "polygons", f"polygon_{id}.png")
+    out_name = os.path.join(IMAGE_DIR, "polygons", f"{file_name}_{id}.png")
     extract = extract_card(image, polygon)
     cv2.imwrite(out_name, extract)
