@@ -23,11 +23,24 @@ LABELS = dict(
     texture=["solid", "striped", "open"],
 )
 
+def get_pipeline_config(model_name, num_classes):
+    pipeline_config = f"/home/tensorflow/models/research/object_detection/configs/tf2/{model_name}.config"
+    configs = config_util.get_configs_from_pipeline_file(pipeline_config)
+    model_config = configs['model']
+    # print(model_config.centure_net.feature_extractor)
+    model_config.ssd.num_classes = num_classes
+    model_config.ssd.freeze_batchnorm = True
+    nms = model_config.ssd.post_processing.batch_non_max_suppression
+    nms.use_class_agnostic_nms = True
+    nms.iou_threshold = 0.4
+    nms.max_detections_per_class = 26
+    nms.max_total_detections = 26
+    return configs
 
-def build_and_restore_model(model_name, num_classes, image_size):
+
+def build_and_restore_model(model_config, image_size):
     tf.keras.backend.clear_session()
     print("Building model and restoring weights for fine-tuning...", flush=True)
-    pipeline_config = f"/home/tensorflow/models/research/object_detection/configs/tf2/{model_name}.config"
     checkpoint_path = (
         "/home/tensorflow/models/research/object_detection/test_data/checkpoint/ckpt-0"
     )
@@ -37,17 +50,7 @@ def build_and_restore_model(model_name, num_classes, image_size):
     # Since we are working off of a COCO architecture which predicts 90
     # class slots by default, we override the `num_classes` field here to be just
     # one (for our new rubber ducky class).
-    configs = config_util.get_configs_from_pipeline_file(pipeline_config)
-    model_config = configs["model"]
-    # print(model_config.centure_net.feature_extractor)
-    model_config.ssd.num_classes = num_classes
-    model_config.ssd.freeze_batchnorm = True
-    nms = (
-        model_config.ssd.post_processing.batch_non_max_suppression.use_class_agnostic_nms
-    ) = True
-    nms.iou_threshold = 0.4
-    nms.max_detections_per_class = 26
-    nms.max_total_detections = 26
+
     detection_model = model_builder.build(model_config=model_config, is_training=True)
 
     # Set up object-based checkpoint restore --- RetinaNet has two prediction

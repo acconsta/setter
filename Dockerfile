@@ -42,6 +42,8 @@ ENV PATH="/home/tensorflow/.local/bin:${PATH}"
 
 RUN python -m pip install -U pip
 RUN python -m pip install . tensorflow==2.8 notebook
+RUN pip uninstall opencv-python -y
+RUN pip install  --force-reinstall opencv-python-headless
 
 ENV TF_CPP_MIN_LOG_LEVEL 3
 
