@@ -11,7 +11,7 @@ interface DetectionObject {
   score: number
   bbox: BBox
 }
-const THRESHOLD = 0.85;
+const THRESHOLD = 0.75;
 // Should exactly match ordre in util.py
 const LABELS = {
   color: ["🟥", "🟩", "🟪"],
@@ -20,6 +20,10 @@ const LABELS = {
   texture: ["solid", "striped", "open"],
 }
 const LABEL_VALUES = Object.values(LABELS)
+
+// The order of tensors we get from the model is not known until we load the model
+let BOXES_INDEX = -1
+let CLASSES_INDEX = -1
 
 function getLabelString(classes: number[]) {
   console.assert(typeof (classes[0]) === "number")
@@ -52,6 +56,10 @@ function clip(height: number, width: number, aspectRatio: number) {
 
 async function load_model() {
   const model = await loadGraphModel("web_model/model.json");
+  let keys = Object.keys(model.modelSignature['outputs'])
+  BOXES_INDEX = keys.findIndex(i => i === "detection_boxes")
+  CLASSES_INDEX = keys.findIndex(i => i === "detection_multiclass_scores")
+  console.assert(BOXES_INDEX !== undefined && CLASSES_INDEX !== undefined)
   return model;
 }
 
@@ -164,8 +172,8 @@ class App extends React.Component {
     ctx.textBaseline = "top";
 
     //Getting predictions
-    const boxes: any = predictions[4].arraySync();
-    const classes: any = predictions[3].arraySync();
+    const boxes: any = predictions[BOXES_INDEX].arraySync();
+    const classes: any = predictions[CLASSES_INDEX].arraySync();
     const detections = this.buildDetectedObjects(boxes, classes);
 
     detections.forEach(item => {
